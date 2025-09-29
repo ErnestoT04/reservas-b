@@ -2,6 +2,8 @@ package sv.edu.catolica.Reservas.model;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "notificacion")
 public class Notificacion {
