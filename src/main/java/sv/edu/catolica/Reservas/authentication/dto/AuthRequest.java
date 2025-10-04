@@ -1,5 +1,3 @@
 package sv.edu.catolica.Reservas.authentication.dto;
 
-public class AuthRequest {
-
-}
+public record AuthRequest(String correo, String contrasena) {}
