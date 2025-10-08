@@ -2,6 +2,39 @@
 
 ---
 
+## [Unreleased]
+
+- Implementación de la lógica de notificaciones.  
+- Módulo de gestión avanzada de reservas.  
+
+---
+
+## [0.2.0] - 2025-10-03
+
+### Added
+- **Autenticación**:
+  - Implementación de login y registro con JWT y rol por defecto.
+  - Endpoints REST para autenticación (registro y login).
+  - Filtros `JwtAuthenticationFilter` y servicio `CustomUserDetailsService`.
+  - Utilidad `JwtUtil` para generación y validación de tokens JWT.
+  - Records: `RegisterRequest`, `AuthRequest`, `AuthResponse`.
+- **Seguridad**:
+  - Configuración de `SecurityConfig` con JWT y codificación SHA-512.
+  - Repositorios: `RolRepository` y método `existsByCorreo` en `UsuarioRepository`.
+- **Dependencias agregadas**:
+  - `spring-boot-starter-security`, `spring-boot-starter-validation`, `jjwt`, `spring-boot-starter-actuator`.
+
+### Changed
+- Refactor del modelo `Rol` con Lombok.
+- Mejora de estructura de seguridad basada en JWT.
+
+### Chore / Config
+- Configuración de Hibernate actualizada.
+- Nuevas propiedades JWT en `application.properties`.
+
+
+---
+
 ## [0.1.0] - 2025-09-28
 ### Added
 - **Usuario**: creación de la entidad `Usuario`.  
@@ -24,9 +57,3 @@
 - **Proyecto base**: generado con Spring Initializr.  
 - **Configuración**: conexión inicial a PostgreSQL establecida.  
 
----
-
-## [Unreleased]
-- Implementación de la lógica de notificaciones.  
-- Módulo de gestión avanzada de reservas.  
-- Integración con frontend (React).  
