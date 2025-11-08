@@ -40,4 +40,8 @@ public class Reserva {
 
     @Column(name = "res_cantidadpersonas", nullable = false)
     private Integer cantidadPersonas;
+
+    @Column(name = "res_fechahoracierre")
+    private LocalDateTime fechaHoraCierre;
+
 }

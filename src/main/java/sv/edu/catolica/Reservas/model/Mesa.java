@@ -1,9 +1,12 @@
 package sv.edu.catolica.Reservas.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "mesa")
+@Getter @Setter
 public class Mesa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,4 +23,3 @@ public class Mesa {
     @JoinColumn(name = "id_estamesa", nullable = false)
     private EstadoMesa estadoMesa;
 }
-

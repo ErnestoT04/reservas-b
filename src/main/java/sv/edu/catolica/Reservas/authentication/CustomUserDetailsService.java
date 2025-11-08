@@ -26,10 +26,15 @@ public class CustomUserDetailsService implements UserDetailsService {
         Usuario u = usuarioRepo.findByCorreo(correo)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
-        String rol = u.getRol() != null ? u.getRol().getRolNombre() : "Administrador";
-        return new User(u.getCorreo(), u.getContrasena(),
+        String rolDb = u.getRol().getRolNombre(); // Administrador / Usuario / Empleado
+        String authority = "ROLE_" + rolDb.toUpperCase(); // ROLE_ADMINISTRADOR, etc.
+
+        return new User(
+                u.getCorreo(),
+                u.getContrasena(),
                 u.getActivo() != null && u.getActivo(),
                 true, true, true,
-                List.of(new SimpleGrantedAuthority(rol)));
+                List.of(new SimpleGrantedAuthority(authority)));
     }
+
 }

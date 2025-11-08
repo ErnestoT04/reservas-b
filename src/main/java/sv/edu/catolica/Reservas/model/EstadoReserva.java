@@ -1,8 +1,12 @@
 package sv.edu.catolica.Reservas.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
+@Getter
+@Setter
 @Table(name = "estado_reserva")
 public class EstadoReserva {
     @Id
