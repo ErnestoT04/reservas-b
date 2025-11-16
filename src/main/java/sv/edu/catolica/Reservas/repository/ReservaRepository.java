@@ -1,6 +1,7 @@
 package sv.edu.catolica.Reservas.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import sv.edu.catolica.Reservas.model.Mesa;
 import sv.edu.catolica.Reservas.model.Reserva;
@@ -18,4 +19,12 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
             Mesa mesa,
             LocalDateTime inicio,
             LocalDateTime fin);
+
+            @Query("""
+    SELECT r FROM Reserva r
+    WHERE (:usuarioId IS NULL OR r.usuario.idUsuario = :usuarioId)
+      AND (:estadoId IS NULL OR r.estadoReserva.idEstadoReserva = :estadoId)
+""")
+List<Reserva> filtrarSinFecha(Long usuarioId, Long estadoId);
+
 }
