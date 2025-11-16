@@ -1,7 +1,6 @@
 package sv.edu.catolica.Reservas.service;
 
 import org.springframework.stereotype.Service;
-
 import jakarta.transaction.Transactional;
 import sv.edu.catolica.Reservas.model.*;
 import sv.edu.catolica.Reservas.repository.*;
@@ -22,10 +21,10 @@ public class ReservaService {
     private final EstadoMesaRepository estadoMesaRepository;
 
     public ReservaService(ReservaRepository reservaRepository,
-            MesaRepository mesaRepository,
-            UsuarioRepository usuarioRepository,
-            EstadoReservaRepository estadoReservaRepository,
-            EstadoMesaRepository estadoMesaRepository) {
+                          MesaRepository mesaRepository,
+                          UsuarioRepository usuarioRepository,
+                          EstadoReservaRepository estadoReservaRepository,
+                          EstadoMesaRepository estadoMesaRepository) {
         this.reservaRepository = reservaRepository;
         this.mesaRepository = mesaRepository;
         this.usuarioRepository = usuarioRepository;
@@ -37,39 +36,47 @@ public class ReservaService {
         return mesaRepository.findMesasDisponibles();
     }
 
-    public Reserva crearReserva(Long idUsuario,
-            Long idMesa,
-            LocalDateTime fechaHoraInicio,
-            LocalDateTime fechaHoraCierre,
-            Integer personas) {
-
+    // ===========================================================
+    // 🔵 VALIDACIÓN CENTRALIZADA
+    // ===========================================================
+    private void validarDatosReserva(LocalDateTime inicio, LocalDateTime fin, Mesa mesa, int personas) {
         // Validar que la hora de cierre sea después de la de inicio
-        if (fechaHoraCierre == null || !fechaHoraCierre.isAfter(fechaHoraInicio)) {
+        if (fin == null || !fin.isAfter(inicio)) {
             throw new RuntimeException("La fecha/hora de cierre debe ser mayor que la fecha/hora de inicio.");
         }
 
         // Validar duración mínima de 30 minutos
-        Duration duracion = Duration.between(fechaHoraInicio, fechaHoraCierre);
+        Duration duracion = Duration.between(inicio, fin);
         if (duracion.toMinutes() < 30) {
             throw new RuntimeException("La duración mínima de una reserva es de 30 minutos.");
         }
 
         // Reglas de horario permitido
-        LocalTime horaApertura = LocalTime.of(6, 30); // 6:30 a. m.
-        LocalTime horaCierre = LocalTime.of(21, 0); // 9:00 p. m.
+        LocalTime horaApertura = LocalTime.of(6, 30);
+        LocalTime horaCierre = LocalTime.of(21, 0);
+        LocalTime horaInicio = inicio.toLocalTime();
+        LocalTime horaFin = fin.toLocalTime();
 
-        LocalTime horaInicio = fechaHoraInicio.toLocalTime();
-        LocalTime horaFin = fechaHoraCierre.toLocalTime();
-
-        // No permitir iniciar antes de apertura
         if (horaInicio.isBefore(horaApertura)) {
             throw new RuntimeException("No se pueden hacer reservaciones antes de las 6:30 a. m.");
         }
-
-        // No permitir terminar después del cierre
         if (horaFin.isAfter(horaCierre)) {
             throw new RuntimeException("No se pueden hacer reservaciones después de las 9:00 p. m.");
         }
+
+        // Validar capacidad de la mesa
+        if (personas > mesa.getCantidad()) {
+            throw new RuntimeException("La cantidad de personas (" + personas + 
+                ") excede la capacidad de la mesa (" + mesa.getCantidad() + ").");
+        }
+    }
+
+    // ===========================================================
+    // 🔵 CREAR RESERVA
+    // ===========================================================
+    public Reserva crearReserva(Long idUsuario, Long idMesa,
+                                LocalDateTime fechaHoraInicio, LocalDateTime fechaHoraCierre,
+                                Integer personas) {
 
         Usuario usuario = usuarioRepository.findById(idUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -77,34 +84,28 @@ public class ReservaService {
         Mesa mesa = mesaRepository.findById(idMesa)
                 .orElseThrow(() -> new RuntimeException("Mesa no encontrada"));
 
-        EstadoReserva estado = estadoReservaRepository.findByNombre("Pendiente");
-        if (estado == null) {
-            throw new RuntimeException("Estado de reserva 'Pendiente' no existe.");
-        }
+        validarDatosReserva(fechaHoraInicio, fechaHoraCierre, mesa, personas);
 
-        // Validar traslape con reservas existentes de la misma mesa
+        EstadoReserva estadoPendiente = estadoReservaRepository.findByNombre("Pendiente");
+        if (estadoPendiente == null)
+            throw new RuntimeException("Estado 'Pendiente' no existe.");
+
+        // Validar traslape de horarios
         List<Reserva> reservasExistentes = reservaRepository.findByMesa(mesa);
-
         for (Reserva r : reservasExistentes) {
-            String nombreEstado = r.getEstadoReserva().getNombre();
-            if (nombreEstado != null && nombreEstado.equalsIgnoreCase("Cancelada")) {
-                continue;
-            }
-
+            if (r.getEstadoReserva().getNombre().equalsIgnoreCase("Cancelada")) continue;
             boolean seCruza = fechaHoraInicio.isBefore(r.getFechaHoraCierre())
                     && fechaHoraCierre.isAfter(r.getFechaHora());
-
             if (seCruza) {
                 throw new RuntimeException("La mesa ya está reservada entre " +
                         r.getFechaHora() + " y " + r.getFechaHoraCierre());
             }
         }
 
-        // Guardar la reserva válida
         Reserva reserva = new Reserva();
         reserva.setUsuario(usuario);
         reserva.setMesa(mesa);
-        reserva.setEstadoReserva(estado);
+        reserva.setEstadoReserva(estadoPendiente);
         reserva.setFechaHora(fechaHoraInicio);
         reserva.setFechaHoraCierre(fechaHoraCierre);
         reserva.setFechaCreacion(LocalDateTime.now());
@@ -113,6 +114,9 @@ public class ReservaService {
         return reservaRepository.save(reserva);
     }
 
+    // ===========================================================
+    // 🔵 OBTENER RESERVAS
+    // ===========================================================
     public List<Reserva> obtenerMisReservas(Long idUsuario) {
         Usuario usuario = usuarioRepository.findById(idUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -123,52 +127,91 @@ public class ReservaService {
         return reservaRepository.findById(id);
     }
 
+    // ===========================================================
+    // 🔵 ACTUALIZAR RESERVA
+    // ===========================================================
     public Reserva actualizarReserva(Long id, LocalDateTime fechaHora, Integer personas) {
         Reserva reserva = reservaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Reserva no encontrada"));
+
+        Mesa mesa = reserva.getMesa();
+
+        // Mantener la misma hora de cierre
+        LocalDateTime fechaHoraCierre = reserva.getFechaHoraCierre();
+
+        validarDatosReserva(fechaHora, fechaHoraCierre, mesa, personas);
+
         reserva.setFechaHora(fechaHora);
         reserva.setCantidadPersonas(personas);
         return reservaRepository.save(reserva);
     }
 
+    // ===========================================================
+    // 🔵 CANCELAR RESERVA
+    // ===========================================================
     public Reserva cancelarReserva(Long id) {
         Reserva reserva = reservaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Reserva no encontrada"));
         EstadoReserva cancelada = estadoReservaRepository.findByNombre("Cancelada");
         reserva.setEstadoReserva(cancelada);
+
+        // 🔹 Al cancelar, la mesa vuelve a "Disponible"
+        Mesa mesa = reserva.getMesa();
+        EstadoMesa disponible = estadoMesaRepository.findByNombre("Disponible");
+        mesa.setEstadoMesa(disponible);
+        mesaRepository.save(mesa);
+
         return reservaRepository.save(reserva);
     }
 
+    // ===========================================================
+    // 🔵 CONFIRMAR RESERVA
+    // ===========================================================
+    public Reserva confirmarReserva(Long id) {
+        Reserva reserva = reservaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reserva no encontrada"));
+
+        EstadoReserva confirmada = estadoReservaRepository.findByNombre("Confirmada");
+        if (confirmada == null)
+            throw new RuntimeException("Estado 'Confirmada' no existe.");
+
+        reserva.setEstadoReserva(confirmada);
+
+        // 🔹 Al confirmar, la mesa se marca como "Ocupada"
+        Mesa mesa = reserva.getMesa();
+        EstadoMesa ocupada = estadoMesaRepository.findByNombre("Ocupada");
+        mesa.setEstadoMesa(ocupada);
+        mesaRepository.save(mesa);
+
+        return reservaRepository.save(reserva);
+    }
+
+    // ===========================================================
+    // 🔵 ACTUALIZAR ESTADO DE MESAS AUTOMÁTICAMENTE
+    // ===========================================================
     @Transactional
     public void actualizarEstadoMesas() {
         LocalDateTime ahora = LocalDateTime.now();
         List<Mesa> mesas = mesaRepository.findAll();
 
         for (Mesa mesa : mesas) {
-            // Saltar mantenimiento
-            if (mesa.getEstadoMesa().getNombre().equalsIgnoreCase("Mantenimiento")) {
-                continue;
-            }
+            if (mesa.getEstadoMesa().getNombre().equalsIgnoreCase("Mantenimiento")) continue;
 
-            boolean tieneReservaActiva = reservaRepository.existsByMesaAndFechaHoraBeforeAndFechaHoraCierreAfter(
-                    mesa, ahora, ahora);
+            boolean tieneReservaActiva = reservaRepository.findByMesa(mesa).stream()
+                    .anyMatch(r ->
+                            r.getFechaHora().isBefore(ahora) &&
+                            r.getFechaHoraCierre().isAfter(ahora) &&
+                            !r.getEstadoReserva().getNombre().equalsIgnoreCase("Cancelada")
+                    );
 
-            EstadoMesa nuevoEstado;
+            EstadoMesa nuevoEstado = tieneReservaActiva
+                    ? estadoMesaRepository.findByNombre("Ocupada")
+                    : estadoMesaRepository.findByNombre("Disponible");
 
-            if (tieneReservaActiva) {
-                nuevoEstado = estadoMesaRepository.findByNombre("Ocupada");
-
-            } else {
-                nuevoEstado = estadoMesaRepository.findByNombre("Disponible");
-
-            }
-
-            // Solo actualizar si cambió (evita escrituras innecesarias)
             if (!mesa.getEstadoMesa().getIdEstadoMesa().equals(nuevoEstado.getIdEstadoMesa())) {
                 mesa.setEstadoMesa(nuevoEstado);
                 mesaRepository.save(mesa);
             }
         }
     }
-
 }

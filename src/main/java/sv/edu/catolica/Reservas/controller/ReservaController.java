@@ -55,7 +55,6 @@ public class ReservaController {
                 .orElseThrow(() -> new RuntimeException("Reserva no encontrada"));
     }
 
-    // ✅ Cualquiera puede editar sus reservas
     @PreAuthorize("hasAnyRole('USUARIO', 'ADMINISTRADOR', 'EMPLEADO')")
     @PutMapping("/reservas/{id}")
     public Reserva actualizarReserva(@PathVariable Long id, @RequestBody Map<String, Object> datos) {
@@ -65,11 +64,17 @@ public class ReservaController {
         return reservaService.actualizarReserva(id, fechaHora, personas);
     }
 
-    // ✅ Cancelar reserva (solo usuario o admin)
     @PreAuthorize("hasAnyRole('USUARIO', 'ADMINISTRADOR', 'EMPLEADO')")
     @PatchMapping("/reservas/{id}/cancelar")
     public Reserva cancelarReserva(@PathVariable Long id) {
         reservaService.actualizarEstadoMesas();
         return reservaService.cancelarReserva(id);
+    }
+
+    @PreAuthorize("hasAnyRole('USUARIO', 'ADMINISTRADOR', 'EMPLEADO')")
+    @PatchMapping("/reservas/{id}/confirmar")
+    public Reserva confirmarReserva(@PathVariable Long id) {
+        reservaService.actualizarEstadoMesas();
+        return reservaService.confirmarReserva(id);
     }
 }
