@@ -21,13 +21,6 @@ public class ReservaController {
     }
 
     @PreAuthorize("hasAnyRole('USUARIO', 'ADMINISTRADOR', 'EMPLEADO')")
-    @GetMapping("/mesas/disponibles")
-    public List<Mesa> obtenerMesasDisponibles() {
-        reservaService.actualizarEstadoMesas();
-        return reservaService.obtenerMesasDisponibles();
-    }
-
-    @PreAuthorize("hasAnyRole('USUARIO', 'ADMINISTRADOR', 'EMPLEADO')")
     @PostMapping("/reservas")
     public Reserva crearReserva(@RequestBody Map<String, Object> datos) {
         reservaService.actualizarEstadoMesas();
@@ -59,9 +52,12 @@ public class ReservaController {
     @PutMapping("/reservas/{id}")
     public Reserva actualizarReserva(@PathVariable Long id, @RequestBody Map<String, Object> datos) {
         reservaService.actualizarEstadoMesas();
+
         LocalDateTime fechaHora = LocalDateTime.parse(datos.get("fechaHora").toString());
+        LocalDateTime fechaHoraCierre = LocalDateTime.parse(datos.get("fechaHoraCierre").toString());
         Integer personas = Integer.valueOf(datos.get("personas").toString());
-        return reservaService.actualizarReserva(id, fechaHora, personas);
+
+        return reservaService.actualizarReserva(id, fechaHora, fechaHoraCierre, personas);
     }
 
     @PreAuthorize("hasAnyRole('USUARIO', 'ADMINISTRADOR', 'EMPLEADO')")
@@ -77,4 +73,18 @@ public class ReservaController {
         reservaService.actualizarEstadoMesas();
         return reservaService.confirmarReserva(id);
     }
+
+
+    @PreAuthorize("hasAnyRole('USUARIO','ADMINISTRADOR','EMPLEADO')")
+    @GetMapping("/mesas/disponibles")
+    public List<Mesa> mesasDisponiblesPorHorario(
+            @RequestParam String inicio,
+            @RequestParam String fin
+    ) {
+        LocalDateTime i = LocalDateTime.parse(inicio);
+        LocalDateTime f = LocalDateTime.parse(fin);
+
+        return reservaService.obtenerMesasDisponiblesEnRango(i, f);
+    }
+
 }
