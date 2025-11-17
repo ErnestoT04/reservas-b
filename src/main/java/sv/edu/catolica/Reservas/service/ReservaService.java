@@ -8,6 +8,7 @@ import sv.edu.catolica.Reservas.repository.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -130,21 +131,40 @@ public class ReservaService {
     // ===========================================================
     // 🔵 ACTUALIZAR RESERVA
     // ===========================================================
-    public Reserva actualizarReserva(Long id, LocalDateTime fechaHora, Integer personas) {
+    public Reserva actualizarReserva(Long id, LocalDateTime inicio, LocalDateTime fin, Integer personas) {
         Reserva reserva = reservaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Reserva no encontrada"));
 
         Mesa mesa = reserva.getMesa();
 
-        // Mantener la misma hora de cierre
-        LocalDateTime fechaHoraCierre = reserva.getFechaHoraCierre();
+        validarDatosReserva(inicio, fin, mesa, personas);
 
-        validarDatosReserva(fechaHora, fechaHoraCierre, mesa, personas);
+        // Validar traslape con otras reservas
+        List<Reserva> reservasExistentes = reservaRepository.findByMesa(mesa);
+        for (Reserva r : reservasExistentes) {
+            if (r.getIdReserva().equals(id)) continue; // ignorar la misma reserva
+            if (r.getEstadoReserva().getNombre().equalsIgnoreCase("Cancelada")) continue;
 
-        reserva.setFechaHora(fechaHora);
+            boolean seCruza =
+                    inicio.isBefore(r.getFechaHoraCierre()) &&
+                            fin.isAfter(r.getFechaHora());
+
+            if (seCruza) {
+                throw new RuntimeException(
+                        "La mesa ya está reservada entre " +
+                                r.getFechaHora() + " y " + r.getFechaHoraCierre()
+                );
+            }
+        }
+
+
+        reserva.setFechaHora(inicio);
+        reserva.setFechaHoraCierre(fin);
         reserva.setCantidadPersonas(personas);
+
         return reservaRepository.save(reserva);
     }
+
 
     // ===========================================================
     // 🔵 CANCELAR RESERVA
@@ -214,4 +234,34 @@ public class ReservaService {
             }
         }
     }
+
+    public List<Mesa> obtenerMesasDisponiblesEnRango(LocalDateTime inicio, LocalDateTime fin) {
+
+        List<Mesa> todas = mesaRepository.findAll();
+        List<Mesa> disponibles = new ArrayList<>();
+
+        for (Mesa mesa : todas) {
+
+            // ignora mesas en mantenimiento
+            if (mesa.getEstadoMesa().getNombre().equalsIgnoreCase("Mantenimiento"))
+                continue;
+
+            // verifica solapamientos con tu consulta optimizada
+            List<Reserva> ocupa = reservaRepository.reservasSolapadas(
+                    mesa.getIdMesa(), inicio, fin
+            );
+
+            if (ocupa.isEmpty()) {
+                disponibles.add(mesa);
+            }
+        }
+
+        return disponibles;
+    }
+
+
+
+
+
+
 }

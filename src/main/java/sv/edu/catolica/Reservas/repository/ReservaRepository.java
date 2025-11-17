@@ -46,4 +46,20 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
                         """)
         List<Object[]> usoDeMesas(LocalDateTime inicio, LocalDateTime fin);
 
+
+        @Query("""
+SELECT r
+FROM Reserva r
+WHERE r.mesa.idMesa = :idMesa
+  AND r.estadoReserva.idEstadoReserva IN (1, 2)
+  AND r.fechaHora < :fin
+  AND r.fechaHoraCierre > :inicio
+""")
+        List<Reserva> reservasSolapadas(
+                Long idMesa,
+                LocalDateTime inicio,
+                LocalDateTime fin
+        );
+
+
 }
