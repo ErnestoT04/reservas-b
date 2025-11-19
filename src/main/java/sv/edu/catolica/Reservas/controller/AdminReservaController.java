@@ -18,7 +18,7 @@ public class AdminReservaController {
     }
 
     // 🔵 LISTAR TODAS O FILTRADAS
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR','EMPLEADO')")
     @GetMapping
     public List<Reserva> filtrarReservas(
             @RequestParam(required = false) String fecha,
