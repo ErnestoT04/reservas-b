@@ -2,12 +2,42 @@
 
 ---
 
-## [Unreleased]
+## [0.3.0] – 2025-11-19
++ Módulo Administrativo y Mejoras de Reservas
 
-- Implementación de la lógica de notificaciones.  
-- Módulo de gestión avanzada de reservas.  
++ Added
++ - AdminReportController con reportes para administrador:
++   - Reporte de reservas por día.
++   - Reporte de uso de mesas por rango de fechas.
++ - AdminReservaController con filtrado avanzado:
++   - Filtrar por fecha, usuario y estado.
++ - AdminReservaService con lógica de reportes y filtrado.
++ - Nuevas consultas en ReservaRepository:
++   - reservasPorDia(fecha)
++   - usoDeMesas(inicio, fin)
++   - filtrarSinFecha(usuarioId, estadoId)
++ - Nuevas funcionalidades del módulo Admin:
++   - Gestión de mesas.
++   - Gestión de usuarios.
 
----
++ Changed
++ - Actualización de ReservaController con reglas de negocio mejoradas.
++ - Mejora en ReservaService:
++   - Confirmación y cancelación de reservas.
++   - Actualización automática del estado de mesas.
++   - Validación avanzada de disponibilidad.
++ - Nuevas consultas en MesaRepository para compatibilidad de horarios.
+
++ Fixed
++ - Corrección al cargar reservas por día.
++ - Corrección en validación de solapamientos.
++ - Arreglos en redirecciones de roles (Admin / Empleado / Usuario).
+
++ Chore
++ - Limpieza de controladores y servicios.
++ - Actualización de application.properties.
++ - Ajustes generales en la estructura del proyecto.
+
 
 ## [0.2.0] - 2025-10-03
 
