@@ -27,20 +27,34 @@ public class AdminReservaService {
 
     public List<Reserva> filtrarReservas(String fecha, Long usuarioId, Long estadoId) {
 
-    List<Reserva> lista = reservaRepository.filtrarSinFecha(usuarioId, estadoId);
+        // SI HAY FECHA → usar query correcta de BD
+        if (fecha != null && !fecha.isBlank()) {
 
-    if (fecha != null && !fecha.isBlank()) {
-        LocalDate f = LocalDate.parse(fecha);
-        LocalDateTime desde = f.atStartOfDay();
-        LocalDateTime hasta = f.atTime(23, 59, 59);
+            LocalDate f = LocalDate.parse(fecha);
 
-        lista = lista.stream()
-                .filter(r -> !r.getFechaHora().isBefore(desde)
-                        && !r.getFechaHora().isAfter(hasta))
-                .toList();
+            // ESTA consulta sí devuelve reservas del día exacto
+            List<Reserva> lista = reservaRepository.reservasPorDia(f);
+
+            // filtros opcionales
+            if (usuarioId != null) {
+                lista = lista.stream()
+                        .filter(r -> r.getUsuario().getIdUsuario().equals(usuarioId))
+                        .toList();
+            }
+
+            if (estadoId != null) {
+                lista = lista.stream()
+                        .filter(r -> r.getEstadoReserva().getIdEstadoReserva().equals(estadoId))
+                        .toList();
+            }
+
+            return lista;
+        }
+
+        // SI NO HAY FECHA → usa filtro sin fecha
+        return reservaRepository.filtrarSinFecha(usuarioId, estadoId);
     }
 
-    return lista;
-}
+
 
 }

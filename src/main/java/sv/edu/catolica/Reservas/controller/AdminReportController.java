@@ -19,14 +19,14 @@ public class AdminReportController {
     }
 
     // 🔵 Reporte: Reservas por día
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR','EMPLEADO')")
     @GetMapping("/reservas-dia")
     public List<Reserva> reservasPorDia(@RequestParam String fecha) {
         return adminReportService.reservasPorDia(fecha);
     }
 
     // 🔵 Reporte: Uso de mesas por rango de fechas
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR','EMPLEADO')")
     @GetMapping("/uso-mesas")
     public List<Map<String, Object>> usoDeMesas(
             @RequestParam String desde,

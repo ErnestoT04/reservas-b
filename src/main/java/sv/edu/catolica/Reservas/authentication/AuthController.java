@@ -18,7 +18,8 @@ import sv.edu.catolica.Reservas.model.Rol;
 import sv.edu.catolica.Reservas.model.Usuario;
 import sv.edu.catolica.Reservas.repository.RolRepository;
 import sv.edu.catolica.Reservas.repository.UsuarioRepository;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -28,6 +29,7 @@ public class AuthController {
     private final UsuarioRepository usuarioRepo;
     private final RolRepository rolRepo;
     private final PasswordEncoder encoder;
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     public AuthController(AuthenticationManager authManager, JwtUtil jwtUtil,
             UsuarioRepository usuarioRepo, RolRepository rolRepo,
@@ -41,9 +43,22 @@ public class AuthController {
 
     @PostMapping("/login")
     public AuthResponse login(@RequestBody AuthRequest req) {
+
+        // 1. LOG: Mostrar el correo que intenta iniciar sesión
+        log.info("Intento de inicio de sesión para el correo: {}", req.correo());
+
         authManager.authenticate(new UsernamePasswordAuthenticationToken(req.correo(), req.contrasena()));
 
         Usuario u = usuarioRepo.findByCorreo(req.correo()).orElseThrow();
+
+
+        // Obtener el rol
+        String rolNombre = u.getRol() != null ? u.getRol().getRolNombre() : "USER";
+
+        // 2. LOG: Mostrar el usuario y el rol encontrado
+        log.info("Usuario autenticado ID: {}, Nombre: {} {}, Rol: {}",
+                u.getIdUsuario(), u.getNombres(), u.getApellidos(), rolNombre);
+
 
         Map<String, Object> claims = new HashMap<>();
         claims.put("rol", u.getRol() != null ? u.getRol().getRolNombre() : "USER");
