@@ -1,8 +1,17 @@
 package sv.edu.catolica.Reservas.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+
 @Table(name = "tipo_notificacion")
 public class TipoNotificacion {
     @Id
